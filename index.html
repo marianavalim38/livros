@@ -33,6 +33,7 @@ button.sec{background:transparent;color:var(--verde);border:1px solid var(--verd
 .tag{display:inline-block;font-size:.85rem;font-weight:600;color:var(--verde)}
 .sf .tag{color:var(--ambar)}
 .livro a{color:var(--verde)}
+.lk{display:inline-block;margin:24px 8px 0 0;padding:11px 20px;border:1px solid var(--verde);border-radius:6px;color:var(--verde);font-weight:600;text-decoration:none}
 .aviso{border-left:4px solid var(--ambar);padding:8px 14px;background:#FBF3E4;margin:14px 0}
 @media print{.noprint,button{display:none!important}body{background:#fff}.livro{break-inside:avoid}}
 </style>
@@ -40,7 +41,7 @@ button.sec{background:transparent;color:var(--verde);border:1px solid var(--verd
 <body>
 <main>
 <h1>Assistente de indicação de livros</h1>
-<p class="sub">Responda ao questionário e receba indicações justificadas, com a fonte de cada influência declarada.</p>
+<p class="sub">Responda ao questionário e receba um prompt pronto para colar no Claude, ChatGPT ou Gemini, com as regras de fonte já incluídas.</p>
 
 <form id="f" class="noprint" novalidate>
 <section class="etapa on" id="e1">
@@ -95,18 +96,21 @@ button.sec{background:transparent;color:var(--verde);border:1px solid var(--verd
 <label for="qtd">Quantidade de indicações <span class="dica">(3 a 10)</span></label>
 <input type="number" id="qtd" min="3" max="10" value="5" style="max-width:120px">
 <div class="erro" id="err2" role="alert"></div>
-<button type="button" id="gerar">Gerar indicações</button>
+<button type="button" id="gerar">Gerar prompt</button>
 <button type="button" class="sec" id="volta">Voltar</button>
 </section>
 </form>
 
 <section id="res" hidden>
-<div class="aviso noprint" id="carr" hidden>Buscando influências declaradas e montando as indicações. Isso pode levar alguns segundos.</div>
-<div id="lista"></div>
+<h2 style="border:0;padding:0;margin-top:0">Seu prompt está pronto</h2>
+<p class="sub">Copie o texto abaixo e cole em um chat com busca na web ativada. Depois, abra os links de fonte que a IA indicar para conferir.</p>
+<textarea id="out" readonly rows="16" style="width:100%;padding:12px;font:15px/1.5 ui-monospace,Consolas,monospace;border:1px solid var(--linha);border-radius:6px;background:#fff;color:inherit"></textarea>
 <div class="noprint">
-<button type="button" id="pdf">Exportar em PDF</button>
-<button type="button" class="sec" id="copia">Copiar lista</button>
-<button type="button" class="sec" id="novo">Nova consulta</button>
+<button type="button" id="copia">Copiar prompt</button>
+<button type="button" class="sec" id="novo">Nova consulta</button><br>
+<a class="lk" href="https://claude.ai/new" target="_blank" rel="noopener">Abrir Claude</a>
+<a class="lk" href="https://chatgpt.com/" target="_blank" rel="noopener">Abrir ChatGPT</a>
+<a class="lk" href="https://gemini.google.com/app" target="_blank" rel="noopener">Abrir Gemini</a>
 </div>
 </section>
 </main>
@@ -136,35 +140,53 @@ $("#prox").onclick=()=>{
   if(p.length){mostra("#err1","Falta: "+p.join("; ")+".");return}
   mostra("#err1","");etapa(2)};
 $("#volta").onclick=()=>etapa(1);
-let ultimo=[];
-$("#gerar").onclick=async()=>{
+function montar(d){
+  const L=a=>a&&a.length?a.join("; "):"não informado";
+  const M={"1":"Modo 1 (gosto pessoal): indique a partir das respostas do questionário e dos livros favoritos.","2":"Modo 2 (autores próximos): indique obras e autores próximos, em tema ou estilo, aos autores preferidos.","3":"Modo 3 (autores de referência): a partir dos autores informados, busque quem eles declaram como influência e indique obras desses autores."};
+  const tema=d.tema_area?` Tema/área: ${d.tema_area}.`:"";
+  const nao=d.nao_agradou.livro?`${d.nao_agradou.livro}${d.nao_agradou.motivo?" (motivo: "+d.nao_agradou.motivo+")":""}`:"não informado";
+  return `Você é um assistente de indicação de livros. Com base no perfil abaixo, faça ${d.quantidade} indicações personalizadas e justificadas. Responda em português.
+
+PERFIL DO LEITOR
+- Finalidade da leitura: ${d.finalidade}.${tema}
+- Tipos de livro: ${L(d.tipos)}
+- Gêneros e temas: ${L(d.temas.concat(d.outro_tema?[d.outro_tema]:[]))}
+- Tamanho: ${d.tamanho}. Ritmo: ${d.ritmo}
+- Estilo de escrita preferido: ${L(d.estilos)}
+- Livros favoritos: ${L(d.favoritos)}
+- Autores preferidos: ${L(d.autores)}
+- Livro que não agradou: ${nao}
+- Idiomas que lê: ${L(d.idiomas)}
+- Aceita livros sem tradução para PT-BR: ${d.aceita_sem_traducao?"sim":"não"}
+
+MODOS DE INDICAÇÃO A USAR
+${d.modos.map(m=>"- "+M[m]).join("\n")}
+
+REGRAS DE EVIDÊNCIA (obrigatórias)
+1. Use a busca na web para localizar influências declaradas. Se você não tiver acesso à busca, avise no início e marque tudo como "sem fonte declarada".
+2. Um "autor de referência" só vale se a influência for declarada pelo PRÓPRIO autor, em entrevista, vídeo, biografia, prefácio, livro ou declaração pública.
+3. Para cada vínculo, mostre: o autor influenciador, o tipo de fonte e o link ou a referência exata.
+4. NUNCA invente links, citações ou fontes. Se não encontrar influência declarada, marque a indicação como "sem fonte declarada" (sugestão sua, para o leitor decidir se considera).
+5. Não indique livros já citados como favoritos nem o que não agradou. Respeite idiomas e a preferência por traduções.
+6. Se não tiver certeza de que há tradução para PT-BR, escreva "não verificado".
+
+FORMATO DE CADA INDICAÇÃO
+Título e autor | tipo | idioma | disponibilidade em PT-BR
+Justificativa: 1 a 2 frases ligando a indicação às respostas do leitor.
+Evidência: "Fonte declarada" (influenciador, tipo de fonte e link) ou "Sem fonte declarada".
+
+No final, liste todos os links citados, para eu conferir.`}
+$("#gerar").onclick=()=>{
   const modos=[...document.querySelectorAll("#modos input:checked")].map(x=>x.value);
   const q=parseInt($("#qtd").value,10);
   if(!modos.length)return mostra("#err2","Escolha ao menos um modo.");
   if(!(q>=3&&q<=10))return mostra("#err2","A quantidade deve estar entre 3 e 10.");
   mostra("#err2","");
   const dados={finalidade:$("#fin").value,tema_area:$("#tema").value.trim(),tipos:val("tipo"),temas:val("tema"),outro_tema:$("#outro").value.trim(),tamanho:$("#tam").value,ritmo:$("#rit").value,estilos:val("estilo"),favoritos:txt(".fav"),autores:txt(".aut"),nao_agradou:{livro:$("#nao").value.trim(),motivo:$("#pq").value.trim()},idiomas:val("idioma"),aceita_sem_traducao:$("#trad").value==="Sim",modos,quantidade:q};
-  $("#f").hidden=true;$("#res").hidden=false;$("#lista").innerHTML="";$("#carr").hidden=false;
-  try{
-    const r=await fetch("/.netlify/functions/recomendar",{method:"POST",body:JSON.stringify(dados)});
-    const j=await r.json();
-    if(!r.ok)throw new Error(j.erro||"Falha ao gerar as indicações.");
-    render(j)
-  }catch(e){$("#lista").innerHTML=`<div class="aviso">Não foi possível gerar as indicações: ${esc(e.message)}. Volte e tente novamente, talvez com menos indicações.</div>`}
-  $("#carr").hidden=true};
-function render(j){
-  ultimo=j.indicacoes||[];
-  const pt={sim:"disponível em PT-BR",nao:"sem tradução para PT-BR",nao_verificado:"tradução em PT-BR não verificada"};
-  let h=j.aviso?`<div class="aviso">${esc(j.aviso)}</div>`:"";
-  h+=ultimo.map(i=>{const e=i.evidencia||{};const ok=e.tipo==="declarada"&&/^https?:\/\//.test(e.link||"");
-    const ev=ok?`<span class="tag">Fonte declarada</span>: ${esc(e.influenciador)} é citado(a) como influência (${esc(e.fonte_tipo)}). <a href="${esc(e.link)}" target="_blank" rel="noopener">Ver fonte</a>`:`<span class="tag">Sem fonte declarada</span>: sugestão da IA, sem influência declarada localizada.`;
-    return `<div class="livro ${ok?"":"sf"}"><h3>${esc(i.titulo)}</h3><div class="meta">${esc(i.autor)} · ${esc(i.tipo)} · ${esc(i.idioma)} · ${esc(pt[i.pt_br]||pt.nao_verificado)}</div><p style="margin:8px 0">${esc(i.justificativa)}</p><div class="meta">${ev}</div></div>`}).join("");
-  $("#lista").innerHTML=h||'<div class="aviso">Nenhuma indicação foi retornada. Tente novamente.</div>'}
-$("#pdf").onclick=()=>print();
+  $("#out").value=montar(dados);$("#f").hidden=true;$("#res").hidden=false;scrollTo(0,0)};
 $("#copia").onclick=async()=>{
-  const t=ultimo.map((i,n)=>{const e=i.evidencia||{};const f=e.tipo==="declarada"?`Fonte declarada (${e.influenciador}, ${e.fonte_tipo}): ${e.link}`:"Sem fonte declarada";return `${n+1}. ${i.titulo}, ${i.autor} (${i.idioma}; PT-BR: ${i.pt_br})\n   ${i.justificativa}\n   ${f}`}).join("\n\n");
-  try{await navigator.clipboard.writeText(t);$("#copia").textContent="Copiado"}catch(e){$("#copia").textContent="Não foi possível copiar"}};
-$("#novo").onclick=()=>{$("#res").hidden=true;$("#f").hidden=false;etapa(1)};
+  try{await navigator.clipboard.writeText($("#out").value);$("#copia").textContent="Copiado"}catch(e){$("#out").select();document.execCommand("copy");$("#copia").textContent="Copiado"}};
+$("#novo").onclick=()=>{$("#res").hidden=true;$("#f").hidden=false;$("#copia").textContent="Copiar prompt";etapa(1)};
 </script>
 </body>
 </html>
