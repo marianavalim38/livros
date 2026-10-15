@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistente de indicação de livros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--papel:#F2F4F1;--tinta:#1B2733;--suave:#5B6773;--linha:#CBD3CE;--verde:#2C6B58;--ambar:#B8741A;--card:#FFFFFF}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font:18px/1.6 Newsreader,Georgia,serif}
+main{max-width:720px;margin:0 auto;padding:32px 20px 80px}
+h1{font-size:2rem;line-height:1.15;margin:0 0 6px;font-weight:600}
+h2{font-size:1.25rem;margin:32px 0 10px;font-weight:600;border-top:1px solid var(--linha);padding-top:18px}
+p.sub{color:var(--suave);margin:0 0 20px}
+label{display:block;margin:12px 0 4px;font-weight:600}
+.dica{font-weight:400;color:var(--suave);font-size:.9rem}
+input[type=text],input[type=number],select{width:100%;padding:10px 12px;font:inherit;border:1px solid var(--linha);border-radius:6px;background:#fff;color:inherit}
+.op{display:flex;flex-wrap:wrap;gap:8px 18px}
+.op label{font-weight:400;margin:0;display:flex;gap:6px;align-items:center}
+.lin{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+button{font:inherit;font-weight:600;padding:12px 22px;border:0;border-radius:6px;background:var(--verde);color:#fff;cursor:pointer;margin-top:24px}
+button.sec{background:transparent;color:var(--verde);border:1px solid var(--verde);margin-left:8px}
+:focus-visible{outline:3px solid #7FB7A4;outline-offset:2px}
+.etapa{display:none}.etapa.on{display:block}
+.prog{color:var(--suave);font-size:.95rem;margin-bottom:18px}
+.erro{background:#FBEAE6;border-left:4px solid #B3412B;padding:10px 14px;margin-top:16px;display:none}
+.livro{background:var(--card);border:1px solid var(--linha);border-left:6px solid var(--verde);border-radius:4px;padding:14px 18px;margin:14px 0}
+.livro.sf{border-left-color:var(--ambar)}
+.livro h3{margin:0;font-size:1.15rem}
+.meta{color:var(--suave);font-size:.92rem}
+.tag{display:inline-block;font-size:.85rem;font-weight:600;color:var(--verde)}
+.sf .tag{color:var(--ambar)}
+.livro a{color:var(--verde)}
+.aviso{border-left:4px solid var(--ambar);padding:8px 14px;background:#FBF3E4;margin:14px 0}
+@media print{.noprint,button{display:none!important}body{background:#fff}.livro{break-inside:avoid}}
+</style>
+</head>
+<body>
+<main>
+<h1>Assistente de indicação de livros</h1>
+<p class="sub">Responda ao questionário e receba indicações justificadas, com a fonte de cada influência declarada.</p>
+
+<form id="f" class="noprint" novalidate>
+<section class="etapa on" id="e1">
+<div class="prog">Etapa 1 de 2: questionário</div>
+
+<h2>Objetivo da leitura</h2>
+<label for="fin">Qual a sua finalidade com a leitura agora?</label>
+<select id="fin"><option>Lazer</option><option>Estudo</option><option>Pesquisa acadêmica</option><option>Desenvolvimento pessoal/profissional</option></select>
+<div id="temaBox" hidden><label for="tema">Qual tema ou área?</label><input type="text" id="tema"></div>
+
+<h2>Tipo e temas</h2>
+<label>Tipos de livro</label>
+<div class="op" id="tipos"></div>
+<label>Gêneros e temas de interesse</label>
+<div class="op" id="temas"></div>
+<label for="outro">Outro tema <span class="dica">(opcional)</span></label><input type="text" id="outro">
+
+<h2>Formato e estilo</h2>
+<div class="lin">
+<div><label for="tam">Tamanho</label><select id="tam"><option>Indiferente</option><option>Curto (até ~200 páginas)</option><option>Médio</option><option>Longo (400+ páginas)</option></select></div>
+<div><label for="rit">Ritmo</label><select id="rit"><option>Indiferente</option><option>Ágil</option><option>Equilibrado</option><option>Contemplativo</option></select></div>
+</div>
+<label>Estilo de escrita</label>
+<div class="op" id="estilos"></div>
+
+<h2>Referências pessoais</h2>
+<label>3 a 5 livros favoritos <span class="dica">(obrigatório: título e autor)</span></label>
+<div id="favs"></div>
+<label>1 a 5 autores preferidos <span class="dica">(obrigatório)</span></label>
+<div id="auts"></div>
+<label for="nao">Um livro que não agradou <span class="dica">(opcional)</span></label>
+<div class="lin"><input type="text" id="nao" placeholder="Título e autor"><input type="text" id="pq" placeholder="Por quê?"></div>
+
+<h2>Idioma e acesso</h2>
+<label>Idiomas que lê</label>
+<div class="op" id="idiomas"></div>
+<label for="trad">Aceita livros sem tradução para PT-BR?</label>
+<select id="trad"><option>Sim</option><option>Não</option></select>
+
+<div class="erro" id="err1" role="alert"></div>
+<button type="button" id="prox">Continuar</button>
+</section>
+
+<section class="etapa" id="e2">
+<div class="prog">Etapa 2 de 2: modo e quantidade</div>
+<label>Modos de indicação</label>
+<div class="op" id="modos">
+<label><input type="checkbox" value="1" checked> 1. Gosto pessoal</label>
+<label><input type="checkbox" value="2" checked> 2. Autores próximos aos que você gosta</label>
+<label><input type="checkbox" value="3" checked> 3. Autores de referência (influências declaradas)</label>
+</div>
+<label for="qtd">Quantidade de indicações <span class="dica">(3 a 10)</span></label>
+<input type="number" id="qtd" min="3" max="10" value="5" style="max-width:120px">
+<div class="erro" id="err2" role="alert"></div>
+<button type="button" id="gerar">Gerar indicações</button>
+<button type="button" class="sec" id="volta">Voltar</button>
+</section>
+</form>
+
+<section id="res" hidden>
+<div class="aviso noprint" id="carr" hidden>Buscando influências declaradas e montando as indicações. Isso pode levar alguns segundos.</div>
+<div id="lista"></div>
+<div class="noprint">
+<button type="button" id="pdf">Exportar em PDF</button>
+<button type="button" class="sec" id="copia">Copiar lista</button>
+<button type="button" class="sec" id="novo">Nova consulta</button>
+</div>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function checks(id,lista,nome){$(id).innerHTML=lista.map(v=>`<label><input type="checkbox" name="${nome}" value="${v}"> ${v}</label>`).join("")}
+checks("#tipos",["Ficção/literatura","Não ficção","Acadêmico/teórico"],"tipo");
+checks("#temas",["Romance","Ficção científica","Fantasia","Policial/suspense","História","Filosofia","Ciências sociais","Comunicação","Negócios","Psicologia","Biografia","Poesia"],"tema");
+checks("#estilos",["Denso/técnico","Claro/didático","Leve/envolvente","Poético/literário"],"estilo");
+checks("#idiomas",["Português","Inglês","Espanhol","Outros"],"idioma");
+$("#favs").innerHTML=[1,2,3,4,5].map(i=>`<input type="text" class="fav" placeholder="Título, autor${i>3?" (opcional)":""}" style="margin-bottom:6px">`).join("");
+$("#auts").innerHTML=[1,2,3,4,5].map(i=>`<input type="text" class="aut" placeholder="Autor${i>1?" (opcional)":""}" style="margin-bottom:6px">`).join("");
+const val=n=>[...document.querySelectorAll(`input[name=${n}]:checked`)].map(x=>x.value);
+const txt=c=>[...document.querySelectorAll(c)].map(x=>x.value.trim()).filter(Boolean);
+$("#fin").onchange=()=>{$("#temaBox").hidden=!["Estudo","Pesquisa acadêmica"].includes($("#fin").value)};
+const mostra=(id,msg)=>{const e=$(id);e.textContent=msg;e.style.display=msg?"block":"none"};
+function etapa(n){document.querySelectorAll(".etapa").forEach(e=>e.classList.remove("on"));$("#e"+n).classList.add("on");scrollTo(0,0)}
+$("#prox").onclick=()=>{
+  const p=[];
+  if(!$("#temaBox").hidden&&!$("#tema").value.trim())p.push("informe o tema ou a área");
+  if(!val("tipo").length)p.push("escolha ao menos um tipo de livro");
+  if(txt(".fav").length<3)p.push("informe de 3 a 5 livros favoritos");
+  if(!txt(".aut").length)p.push("informe ao menos 1 autor preferido");
+  if(!val("idioma").length)p.push("escolha ao menos um idioma");
+  if(p.length){mostra("#err1","Falta: "+p.join("; ")+".");return}
+  mostra("#err1","");etapa(2)};
+$("#volta").onclick=()=>etapa(1);
+let ultimo=[];
+$("#gerar").onclick=async()=>{
+  const modos=[...document.querySelectorAll("#modos input:checked")].map(x=>x.value);
+  const q=parseInt($("#qtd").value,10);
+  if(!modos.length)return mostra("#err2","Escolha ao menos um modo.");
+  if(!(q>=3&&q<=10))return mostra("#err2","A quantidade deve estar entre 3 e 10.");
+  mostra("#err2","");
+  const dados={finalidade:$("#fin").value,tema_area:$("#tema").value.trim(),tipos:val("tipo"),temas:val("tema"),outro_tema:$("#outro").value.trim(),tamanho:$("#tam").value,ritmo:$("#rit").value,estilos:val("estilo"),favoritos:txt(".fav"),autores:txt(".aut"),nao_agradou:{livro:$("#nao").value.trim(),motivo:$("#pq").value.trim()},idiomas:val("idioma"),aceita_sem_traducao:$("#trad").value==="Sim",modos,quantidade:q};
+  $("#f").hidden=true;$("#res").hidden=false;$("#lista").innerHTML="";$("#carr").hidden=false;
+  try{
+    const r=await fetch("/.netlify/functions/recomendar",{method:"POST",body:JSON.stringify(dados)});
+    const j=await r.json();
+    if(!r.ok)throw new Error(j.erro||"Falha ao gerar as indicações.");
+    render(j)
+  }catch(e){$("#lista").innerHTML=`<div class="aviso">Não foi possível gerar as indicações: ${esc(e.message)}. Volte e tente novamente, talvez com menos indicações.</div>`}
+  $("#carr").hidden=true};
+function render(j){
+  ultimo=j.indicacoes||[];
+  const pt={sim:"disponível em PT-BR",nao:"sem tradução para PT-BR",nao_verificado:"tradução em PT-BR não verificada"};
+  let h=j.aviso?`<div class="aviso">${esc(j.aviso)}</div>`:"";
+  h+=ultimo.map(i=>{const e=i.evidencia||{};const ok=e.tipo==="declarada"&&/^https?:\/\//.test(e.link||"");
+    const ev=ok?`<span class="tag">Fonte declarada</span>: ${esc(e.influenciador)} é citado(a) como influência (${esc(e.fonte_tipo)}). <a href="${esc(e.link)}" target="_blank" rel="noopener">Ver fonte</a>`:`<span class="tag">Sem fonte declarada</span>: sugestão da IA, sem influência declarada localizada.`;
+    return `<div class="livro ${ok?"":"sf"}"><h3>${esc(i.titulo)}</h3><div class="meta">${esc(i.autor)} · ${esc(i.tipo)} · ${esc(i.idioma)} · ${esc(pt[i.pt_br]||pt.nao_verificado)}</div><p style="margin:8px 0">${esc(i.justificativa)}</p><div class="meta">${ev}</div></div>`}).join("");
+  $("#lista").innerHTML=h||'<div class="aviso">Nenhuma indicação foi retornada. Tente novamente.</div>'}
+$("#pdf").onclick=()=>print();
+$("#copia").onclick=async()=>{
+  const t=ultimo.map((i,n)=>{const e=i.evidencia||{};const f=e.tipo==="declarada"?`Fonte declarada (${e.influenciador}, ${e.fonte_tipo}): ${e.link}`:"Sem fonte declarada";return `${n+1}. ${i.titulo}, ${i.autor} (${i.idioma}; PT-BR: ${i.pt_br})\n   ${i.justificativa}\n   ${f}`}).join("\n\n");
+  try{await navigator.clipboard.writeText(t);$("#copia").textContent="Copiado"}catch(e){$("#copia").textContent="Não foi possível copiar"}};
+$("#novo").onclick=()=>{$("#res").hidden=true;$("#f").hidden=false;etapa(1)};
+</script>
+</body>
+</html>
